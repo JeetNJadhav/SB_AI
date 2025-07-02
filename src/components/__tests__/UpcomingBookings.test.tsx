@@ -53,4 +53,34 @@ describe('UpcomingBookings', () => {
     expect(screen.getByText(/John Doe \(john@example.com\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Jane Smith \(jane@example.com\)/i)).toBeInTheDocument();
   });
+
+  test('does not render team members section when teamMembers is undefined', () => {
+    render(<UpcomingBookings bookings={[
+      { id: 3, date: '2025-07-20', venue: 'Main Office', building: 'A', floor: '1', seats: [{ id: 1 }], bookingType: 'team', teamMembers: undefined },
+    ]} />);
+    expect(screen.queryByText(/Team Members:/i)).not.toBeInTheDocument();
+  });
+
+  test('does not render team members section when teamMembers is an empty array', () => {
+    render(<UpcomingBookings bookings={[
+      { id: 4, date: '2025-07-25', venue: 'Remote Office', building: 'C', floor: '4', seats: [{ id: 7 }], bookingType: 'team', teamMembers: [] },
+    ]} />);
+    expect(screen.queryByText(/Team Members:/i)).not.toBeInTheDocument();
+  });
+
+  test('renders default bookings when bookings prop is not provided', () => {
+    render(<UpcomingBookings />);
+    expect(screen.getByText((content, element) => {
+      return !!(element && element.tagName.toLowerCase() === 'li' && element.textContent?.includes('Date: 2025-07-10'));
+    })).toBeInTheDocument();
+    expect(screen.getByText((content, element) => {
+      return !!(element && element.tagName.toLowerCase() === 'li' && element.textContent?.includes('Venue: Main Office'));
+    })).toBeInTheDocument();
+    expect(screen.getByText((content, element) => {
+      return !!(element && element.tagName.toLowerCase() === 'li' && element.textContent?.includes('Date: 2025-07-15'));
+    })).toBeInTheDocument();
+    expect(screen.getByText((content, element) => {
+      return !!(element && element.tagName.toLowerCase() === 'li' && element.textContent?.includes('Venue: Branch Office'));
+    })).toBeInTheDocument();
+  });
 });

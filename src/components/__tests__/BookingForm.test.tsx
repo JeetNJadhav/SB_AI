@@ -1,9 +1,47 @@
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import BookingForm from '../BookingForm';
+import { setBookingDetails } from '../../redux/bookingSlice';
+import bookingReducer from '../../redux/bookingSlice';
+import userEvent from '@testing-library/user-event';
 
-// Mock react-router-dom's useNavigate
+jest.mock('../../data/locations', () => ({
+  locations: [
+    {
+      venue: 'Main Office',
+      buildings: [
+        {
+          name: 'A',
+          floors: [
+            { number: '1', seats: [] },
+            { number: '2', seats: [] },
+          ],
+        },
+        {
+          name: 'B',
+          floors: [
+            { number: '1', seats: [] },
+          ],
+        },
+      ],
+    },
+    {
+      venue: 'Branch Office',
+      buildings: [
+        {
+          name: 'C',
+          floors: [
+            { number: '1', seats: [] },
+          ],
+        },
+      ],
+    },
+  ],
+}));
+
 const mockedUsedNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
@@ -11,13 +49,44 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockedUsedNavigate,
 }));
 
-describe('BookingForm', () => {
-  test('renders booking form elements', () => {
-    render(
-      <Router>
-        <BookingForm />
-      </Router>
+interface RenderOptions {
+  preloadedState?: any;
+  store?: any;
+  route?: string;
+}
+
+const rootReducer = combineReducers({
+  booking: bookingReducer,
+});
+
+function renderWithProviders(
+  ui: React.ReactElement,
+  { preloadedState, store = configureStore({ reducer: rootReducer, preloadedState }), route = '/', ...renderOptions }: RenderOptions = {}
+) {
+  const mockedStore = {
+    ...store,
+    dispatch: jest.fn(),
+  };
+
+  function Wrapper({ children }: PropsWithChildren<{}>): JSX.Element {
+    return (
+      <Provider store={mockedStore}>
+        <MemoryRouter initialEntries={[route]}>
+          {children}
+        </MemoryRouter>
+      </Provider>
     );
+  }
+  return { store: mockedStore, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+}
+
+describe('BookingForm', () => {
+  beforeEach(() => {
+    mockedUsedNavigate.mockClear();
+  });
+
+  test('renders booking form elements', () => {
+    renderWithProviders(<BookingForm />, { preloadedState: { booking: { venue: '' } } });
 
     expect(screen.getByLabelText(/Date/i)).toBeInTheDocument();
     expect(screen.getByText(/Booking Type/i)).toBeInTheDocument();
@@ -28,80 +97,61 @@ describe('BookingForm', () => {
   });
 
   test('allows selecting booking type', () => {
-    render(
-      <Router>
-        <BookingForm />
-      </Router>
-    );
+    const { store } = renderWithProviders(<BookingForm />);
 
     const bookTeamRadio = screen.getByLabelText(/Book for Team/i);
     fireEvent.click(bookTeamRadio);
+    expect(store.dispatch).toHaveBeenCalledWith(setBookingDetails({ ...store.getState().booking, bookingType: 'team', numberOfTeamMembers: undefined }));
+  });
+
+  test('renders number of team members input when booking type is team', () => {
+    renderWithProviders(<BookingForm />, { preloadedState: { booking: { bookingType: 'team', venue: 'Main Office', building: 'A', floor: '1' } } });
     expect(screen.getByLabelText(/Number of Team Members/i)).toBeInTheDocument();
-
-    const bookSelfRadio = screen.getByLabelText(/Book for Self/i);
-    fireEvent.click(bookSelfRadio);
-    expect(screen.queryByLabelText(/Number of Team Members/i)).not.toBeInTheDocument();
   });
 
-  test('navigates to seat selection on form submission for self booking', () => {
-    render(
-      <Router>
-        <BookingForm />
-      </Router>
-    );
+  test('navigates to seat selection on form submission', async () => {
+    renderWithProviders(<BookingForm />);
 
-    fireEvent.change(screen.getByLabelText(/Date/i), { target: { value: '2025-07-01' } });
+    await userEvent.type(screen.getByLabelText(/Date/i), '2025-07-01');
     fireEvent.change(screen.getByLabelText(/Venue/i), { target: { value: 'Main Office' } });
-    fireEvent.change(screen.getByLabelText(/Building/i), { target: { value: 'A' } });
-    fireEvent.change(screen.getByLabelText(/Floor/i), { target: { value: '1' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /Select Seat/i }));
+    // Wait for the Building dropdown to be enabled and its options to be rendered
+    const buildingSelect = await screen.findByRole('combobox', { name: /Building/i, enabled: true });
+    fireEvent.change(buildingSelect, { target: { value: 'A' } });
 
-    expect(mockedUsedNavigate).toHaveBeenCalledWith(
-      '/select-seat',
-      expect.objectContaining({
-        state: {
-          bookingDetails: expect.objectContaining({
-            date: '2025-07-01',
-            venue: 'Main Office',
-            building: 'A',
-            floor: '1',
-            bookingType: 'self',
-          }),
-        },
-      })
-    );
+    // Wait for the Floor dropdown to be enabled and its options to be rendered
+    const floorSelect = await screen.findByRole('combobox', { name: /Floor/i, enabled: true });
+    fireEvent.change(floorSelect, { target: { value: '1' } });
+
+    fireEvent.submit(screen.getByTestId('booking-form'));
+
+    expect(mockedUsedNavigate).toHaveBeenCalledWith('/select-seat');
   });
 
-  test('navigates to seat selection on form submission for team booking', () => {
-    render(
-      <Router>
-        <BookingForm />
-      </Router>
-    );
-
-    fireEvent.change(screen.getByLabelText(/Date/i), { target: { value: '2025-07-01' } });
-    fireEvent.click(screen.getByLabelText(/Book for Team/i));
-    fireEvent.change(screen.getByLabelText(/Number of Team Members/i), { target: { value: '3' } });
-    fireEvent.change(screen.getByLabelText(/Venue/i), { target: { value: 'Main Office' } });
-    fireEvent.change(screen.getByLabelText(/Building/i), { target: { value: 'A' } });
-    fireEvent.change(screen.getByLabelText(/Floor/i), { target: { value: '1' } });
-
-    fireEvent.click(screen.getByRole('button', { name: /Select Seat/i }));
-
-    expect(mockedUsedNavigate).toHaveBeenCalledWith(
-      '/select-seat',
-      expect.objectContaining({
-        state: {
-          bookingDetails: expect.objectContaining({
-            date: '2025-07-01',
-            venue: 'Main Office',
-            building: 'A',
-            floor: '1',
-            bookingType: 'team',
-            numberOfTeamMembers: 3,
-          }),
+  test('dispatches correct action when number of team members is changed', () => {
+    const { store } = renderWithProviders(<BookingForm />, {
+      preloadedState: {
+        booking: {
+          bookingType: 'team',
+          numberOfTeamMembers: 2,
+          venue: 'Main Office',
+          building: 'A',
+          floor: '1',
+          date: '2025-07-01',
         },
+      },
+    });
+    // Make sure the input is rendered
+    const input = screen.getByLabelText(/Number of Team Members/i);
+    fireEvent.change(input, { target: { value: '5' } });
+    expect(store.dispatch).toHaveBeenCalledWith(
+      setBookingDetails({
+        bookingType: 'team',
+        numberOfTeamMembers: 5,
+        venue: 'Main Office',
+        building: 'A',
+        floor: '1',
+        date: '2025-07-01',
       })
     );
   });

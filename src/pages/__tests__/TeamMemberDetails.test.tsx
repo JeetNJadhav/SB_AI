@@ -1,27 +1,23 @@
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import TeamMemberDetails from '../TeamMemberDetails';
+import userEvent from '@testing-library/user-event';
+
 // Mock react-router-dom's useNavigate and useLocation
 const mockedUsedNavigate = jest.fn();
 const mockedUsedLocation = jest.fn();
 
-// Move jest.mock after these declarations
-jest.mock('react-router-dom', () => {
-  const actual = jest.requireActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockedUsedNavigate,
-    useLocation: mockedUsedLocation,
-  };
-});
-
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter as Router } from 'react-router-dom';
-import TeamMemberDetails from '../TeamMemberDetails';
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockedUsedNavigate,
+  useLocation: () => mockedUsedLocation(), // Call the mock function directly
+}));
 
 describe('TeamMemberDetails', () => {
   beforeEach(() => {
-    jest.resetModules();
     mockedUsedNavigate.mockClear();
-    mockedUsedLocation.mockReset();
+    mockedUsedLocation.mockClear();
   });
 
   test('renders invalid booking details message if not a team booking', () => {
@@ -32,9 +28,9 @@ describe('TeamMemberDetails', () => {
       },
     });
     render(
-      <Router>
+      <MemoryRouter>
         <TeamMemberDetails />
-      </Router>
+      </MemoryRouter>
     );
     expect(screen.getByText(/Invalid booking details or not a team booking./i)).toBeInTheDocument();
   });
@@ -47,9 +43,9 @@ describe('TeamMemberDetails', () => {
       },
     });
     render(
-      <Router>
+      <MemoryRouter>
         <TeamMemberDetails />
-      </Router>
+      </MemoryRouter>
     );
     expect(screen.getByLabelText(/Name/i, { selector: '#name-0' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Email/i, { selector: '#email-0' })).toBeInTheDocument();
@@ -58,21 +54,22 @@ describe('TeamMemberDetails', () => {
     expect(screen.getByRole('button', { name: /Confirm Team Booking/i })).toBeInTheDocument();
   });
 
-  test('navigates to confirmation page on form submission', () => {
+  test('navigates to confirmation page on form submission', async () => {
     mockedUsedLocation.mockReturnValue({
       state: {
         bookingDetails: { bookingType: 'team', numberOfTeamMembers: 1 },
         selectedSeats: [{ id: 1 }],
+        teamMembers: [], // Explicitly define teamMembers
       },
     });
     render(
-      <Router>
+      <MemoryRouter>
         <TeamMemberDetails />
-      </Router>
+      </MemoryRouter>
     );
-    fireEvent.change(screen.getByLabelText(/Name/i, { selector: '#name-0' }), { target: { value: 'Test User' } });
-    fireEvent.change(screen.getByLabelText(/Email/i, { selector: '#email-0' }), { target: { value: 'test@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: /Confirm Team Booking/i }));
+    await userEvent.type(screen.getByLabelText(/Name/i, { selector: '#name-0' }), 'Test User');
+    await userEvent.type(screen.getByLabelText(/Email/i, { selector: '#email-0' }), 'test@example.com');
+    await userEvent.click(screen.getByRole('button', { name: /Confirm Team Booking/i }));
     expect(mockedUsedNavigate).toHaveBeenCalledWith(
       '/confirm',
       expect.objectContaining({

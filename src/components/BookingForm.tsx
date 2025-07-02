@@ -1,65 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { locations } from '../data/locations';
-
-interface BookingDetails {
-  date: string;
-  venue: string;
-  building: string;
-  floor: string;
-  bookingType: 'self' | 'team';
-  numberOfTeamMembers?: number;
-}
+import { setBookingDetails, BookingDetails } from '../redux/bookingSlice';
+import { RootState } from '../redux/store';
 
 const BookingForm: React.FC = () => {
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
-    date: '',
-    venue: '',
-    building: '',
-    floor: '',
-    bookingType: 'self', // Default to 'self'
-  });
+  const dispatch = useDispatch();
+  const bookingDetails = useSelector((state: RootState) => state.booking);
   const navigate = useNavigate();
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBookingDetails({ ...bookingDetails, date: e.target.value });
-  };
-
-  const handleVenueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedVenue = e.target.value;
-    setBookingDetails({ ...bookingDetails, venue: selectedVenue, building: '', floor: '' });
-  };
-
-  const handleBuildingChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedBuilding = e.target.value;
-    setBookingDetails({ ...bookingDetails, building: selectedBuilding, floor: '' });
-  };
-
-  const handleFloorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBookingDetails({ ...bookingDetails, floor: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    dispatch(setBookingDetails({ ...bookingDetails, [name]: value }));
   };
 
   const handleBookingTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBookingDetails({ ...bookingDetails, bookingType: e.target.value as 'self' | 'team', numberOfTeamMembers: undefined });
+    dispatch(setBookingDetails({ ...bookingDetails, bookingType: e.target.value as 'self' | 'team', numberOfTeamMembers: undefined }));
   };
 
   const handleNumberOfTeamMembersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBookingDetails({ ...bookingDetails, numberOfTeamMembers: parseInt(e.target.value) });
+    dispatch(setBookingDetails({ ...bookingDetails, numberOfTeamMembers: parseInt(e.target.value) }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/select-seat', { state: { bookingDetails } });
+    navigate('/select-seat');
   };
 
   const selectedLocation = locations.find(loc => loc.venue === bookingDetails.venue);
   const selectedBuilding = selectedLocation?.buildings.find(bld => bld.name === bookingDetails.building);
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} data-testid="booking-form">
       <div className="mb-3">
         <label htmlFor="date" className="form-label">Date</label>
-        <input type="date" className="form-control" id="date" name="date" onChange={handleDateChange} required />
+        <input type="date" className="form-control" id="date" name="date" value={bookingDetails.date} onChange={handleChange} required />
       </div>
       <div className="mb-3">
         <label className="form-label">Booking Type</label>
@@ -84,7 +60,7 @@ const BookingForm: React.FC = () => {
 
       <div className="mb-3">
         <label htmlFor="venue" className="form-label">Venue</label>
-        <select className="form-select" id="venue" name="venue" onChange={handleVenueChange} value={bookingDetails.venue} required>
+        <select className="form-select" id="venue" name="venue" onChange={handleChange} value={bookingDetails.venue} required>
           <option value="">Select Venue</option>
           {locations.map(loc => (
             <option key={loc.venue} value={loc.venue}>{loc.venue}</option>
@@ -93,7 +69,7 @@ const BookingForm: React.FC = () => {
       </div>
       <div className="mb-3">
         <label htmlFor="building" className="form-label">Building</label>
-        <select className="form-select" id="building" name="building" onChange={handleBuildingChange} value={bookingDetails.building} disabled={!bookingDetails.venue} required>
+        <select className="form-select" id="building" name="building" onChange={handleChange} value={bookingDetails.building} disabled={!bookingDetails.venue} required>
           <option value="">Select Building</option>
           {selectedLocation?.buildings.map(bld => (
             <option key={bld.name} value={bld.name}>{bld.name}</option>
@@ -102,7 +78,7 @@ const BookingForm: React.FC = () => {
       </div>
       <div className="mb-3">
         <label htmlFor="floor" className="form-label">Floor</label>
-        <select className="form-select" id="floor" name="floor" onChange={handleFloorChange} value={bookingDetails.floor} disabled={!bookingDetails.building} required>
+        <select className="form-select" id="floor" name="floor" onChange={handleChange} value={bookingDetails.floor} disabled={!bookingDetails.building} required>
           <option value="">Select Floor</option>
           {selectedBuilding?.floors.map(floor => (
             <option key={floor.number} value={floor.number}>{floor.number}</option>
