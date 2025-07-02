@@ -1,10 +1,13 @@
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import SeatSelection from '../SeatSelection';
+
 const mockedUsedNavigate = jest.fn();
-const mockedUsedLocation = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedUsedNavigate,
-  useLocation: mockedUsedLocation,
 }));
 
 // Mock the locations data
@@ -27,82 +30,55 @@ jest.mock('../../data/locations', () => ({
   ],
 }));
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter as Router } from 'react-router-dom';
-import SeatSelection from '../SeatSelection';
-
 describe('SeatSelection', () => {
   beforeEach(() => {
     mockedUsedNavigate.mockClear();
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'self',
-        },
-      },
-    });
+    window.alert = jest.fn();
   });
 
   test('renders message if no booking details', () => {
-    mockedUsedLocation.mockReturnValue({ state: null });
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: null }]}>
         <SeatSelection />
-      </Router>
+      </MemoryRouter>
     );
     expect(screen.getByText(/Please select booking details first./i)).toBeInTheDocument();
   });
 
   test('renders seat map for self booking and allows single selection', () => {
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'self',
-        },
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'self' as const,
+    };
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails } }]}>
         <SeatSelection />
-      </Router>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/Select a Seat/i)).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
 
-    // Select seat 1 (find the button explicitly)
-    let seat1Button = screen.getAllByText('1').find(el => el.tagName === 'BUTTON');
-    fireEvent.click(seat1Button!);
-    seat1Button = screen.getAllByText('1').find(el => el.tagName === 'BUTTON');
-    // eslint-disable-next-line no-console
-    console.log('Seat 1 class:', seat1Button!.className);
-    expect(seat1Button).toHaveClass('btn-success');
+    // Select seat 1
+    fireEvent.click(screen.getByText('1'));
+    expect(screen.getByText('1')).toHaveClass('btn-success');
 
     // Clicking seat 1 again should deselect it
-    fireEvent.click(seat1Button!);
-    seat1Button = screen.getAllByText('1').find(el => el.tagName === 'BUTTON');
-    expect(seat1Button).toHaveClass('btn-outline-primary');
+    fireEvent.click(screen.getByText('1'));
+    expect(screen.getByText('1')).toHaveClass('btn-outline-primary');
 
     // Clicking seat 2 (booked/disabled) should not change selection
-    const seat2Button = screen.getAllByText('2').find(el => el.tagName === 'BUTTON');
-    fireEvent.click(seat2Button!);
-    seat1Button = screen.getAllByText('1').find(el => el.tagName === 'BUTTON');
-    expect(seat1Button).toHaveClass('btn-outline-primary');
+    fireEvent.click(screen.getByText('2'));
+    expect(screen.getByText('1')).toHaveClass('btn-outline-primary');
 
     // Select seat 1 again
-    fireEvent.click(seat1Button!);
-    seat1Button = screen.getAllByText('1').find(el => el.tagName === 'BUTTON');
-    expect(seat1Button).toHaveClass('btn-success');
+    fireEvent.click(screen.getByText('1'));
+    expect(screen.getByText('1')).toHaveClass('btn-success');
 
     fireEvent.click(screen.getByRole('button', { name: /Confirm Booking/i }));
     expect(mockedUsedNavigate).toHaveBeenCalledWith(
@@ -117,22 +93,19 @@ describe('SeatSelection', () => {
   });
 
   test('renders seat map for team booking and allows multiple selections', () => {
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'team',
-          numberOfTeamMembers: 1,
-        },
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'team' as const,
+      numberOfTeamMembers: 1,
+    };
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails } }]}>
         <SeatSelection />
-      </Router>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/Please select 1 seats for your team./i)).toBeInTheDocument();
@@ -154,22 +127,18 @@ describe('SeatSelection', () => {
   });
 
   test('shows alert if incorrect number of seats selected for self booking', () => {
-    window.alert = jest.fn();
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'self',
-        },
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'self' as const,
+    };
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails } }]}>
         <SeatSelection />
-      </Router>
+      </MemoryRouter>
     );
 
     // Do not select any seat
@@ -179,23 +148,19 @@ describe('SeatSelection', () => {
   });
 
   test('shows alert if incorrect number of seats selected for team booking', () => {
-    window.alert = jest.fn();
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'team',
-          numberOfTeamMembers: 2,
-        },
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'team' as const,
+      numberOfTeamMembers: 2,
+    };
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails } }]}>
         <SeatSelection />
-      </Router>
+      </MemoryRouter>
     );
 
     // Select only one seat
