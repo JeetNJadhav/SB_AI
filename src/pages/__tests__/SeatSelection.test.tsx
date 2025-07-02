@@ -154,6 +154,7 @@ describe('SeatSelection', () => {
   });
 
   test('shows alert if incorrect number of seats selected for self booking', () => {
+    window.alert = jest.fn();
     mockedUsedLocation.mockReturnValue({
       state: {
         bookingDetails: {
@@ -173,11 +174,12 @@ describe('SeatSelection', () => {
 
     // Do not select any seat
     fireEvent.click(screen.getByRole('button', { name: /Confirm Booking/i }));
-    expect(screen.getByText(/Please select exactly one seat for self-booking./i)).toBeInTheDocument();
+    expect(window.alert).toHaveBeenCalledWith('Please select exactly one seat for self-booking.');
     expect(mockedUsedNavigate).not.toHaveBeenCalled();
   });
 
   test('shows alert if incorrect number of seats selected for team booking', () => {
+    window.alert = jest.fn();
     mockedUsedLocation.mockReturnValue({
       state: {
         bookingDetails: {
@@ -199,7 +201,7 @@ describe('SeatSelection', () => {
     // Select only one seat
     fireEvent.click(screen.getByText('1'));
     fireEvent.click(screen.getByRole('button', { name: /Confirm Booking/i }));
-    expect(screen.getByText(/Please select exactly 2 seats for team booking./i)).toBeInTheDocument();
+    expect(window.alert).toHaveBeenCalledWith('Please select exactly 2 seats for team booking.');
     expect(mockedUsedNavigate).not.toHaveBeenCalled();
   });
 });

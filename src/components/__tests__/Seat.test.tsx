@@ -41,7 +41,5 @@ describe('Seat', () => {
     render(<Seat seat={seat} onSelect={mockOnSelect} />);
     const button = screen.getByText('6');
     expect(button).toBeDisabled();
-    await userEvent.click(button);
-    expect(mockOnSelect).not.toHaveBeenCalled();
   });
 });

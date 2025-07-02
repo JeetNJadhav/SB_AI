@@ -1,16 +1,13 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import Confirmation from '../Confirmation';
 
-// Mock react-router-dom's useNavigate and useLocation
 const mockedUsedNavigate = jest.fn();
-const mockedUsedLocation = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedUsedNavigate,
-  useLocation: () => mockedUsedLocation,
 }));
 
 describe('Confirmation', () => {
@@ -19,32 +16,28 @@ describe('Confirmation', () => {
   });
 
   test('renders invalid booking details message if no booking details or selected seats', () => {
-    mockedUsedLocation.mockReturnValue({ state: null });
     render(
-      <Router>
+      <MemoryRouter>
         <Confirmation />
-      </Router>
+      </MemoryRouter>
     );
     expect(screen.getByText(/Invalid booking details./i)).toBeInTheDocument();
   });
 
   test('renders self-booking confirmation correctly', () => {
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'self',
-        },
-        selectedSeats: [{ id: 10, booked: false, selected: true }],
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'self',
+    };
+    const selectedSeats = [{ id: 10, booked: false, selected: true }];
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats } }]}>
         <Confirmation />
-      </Router>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/Confirm Your Booking/i)).toBeInTheDocument();
@@ -57,30 +50,27 @@ describe('Confirmation', () => {
   });
 
   test('renders team-booking confirmation correctly with team members', () => {
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-02',
-          venue: 'Branch Office',
-          building: 'B',
-          floor: '2',
-          bookingType: 'team',
-          numberOfTeamMembers: 2,
-        },
-        selectedSeats: [
-          { id: 5, booked: false, selected: true },
-          { id: 6, booked: false, selected: true },
-        ],
-        teamMembers: [
-          { name: 'John Doe', email: 'john@example.com' },
-          { name: 'Jane Smith', email: 'jane@example.com' },
-        ],
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-02',
+      venue: 'Branch Office',
+      building: 'B',
+      floor: '2',
+      bookingType: 'team',
+      numberOfTeamMembers: 2,
+    };
+    const selectedSeats = [
+      { id: 5, booked: false, selected: true },
+      { id: 6, booked: false, selected: true },
+    ];
+    const teamMembers = [
+      { name: 'John Doe', email: 'john@example.com' },
+      { name: 'Jane Smith', email: 'jane@example.com' },
+    ];
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats, teamMembers } }]}>
         <Confirmation />
-      </Router>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/Confirm Your Booking/i)).toBeInTheDocument();
@@ -98,22 +88,19 @@ describe('Confirmation', () => {
   });
 
   test('navigates to payment page on Pay Now click', () => {
-    mockedUsedLocation.mockReturnValue({
-      state: {
-        bookingDetails: {
-          date: '2025-07-01',
-          venue: 'Main Office',
-          building: 'A',
-          floor: '1',
-          bookingType: 'self',
-        },
-        selectedSeats: [{ id: 10, booked: false, selected: true }],
-      },
-    });
+    const bookingDetails = {
+      date: '2025-07-01',
+      venue: 'Main Office',
+      building: 'A',
+      floor: '1',
+      bookingType: 'self',
+    };
+    const selectedSeats = [{ id: 10, booked: false, selected: true }];
+
     render(
-      <Router>
+      <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats } }]}>
         <Confirmation />
-      </Router>
+      </MemoryRouter>
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Pay Now/i }));
