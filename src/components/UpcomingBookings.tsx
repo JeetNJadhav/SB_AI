@@ -39,7 +39,7 @@ const UpcomingBookings: React.FC<{ bookings?: Booking[] }> = ({ bookings: propBo
               <strong>Building:</strong> {booking.building}<br/>
               <strong>Floor:</strong> {booking.floor}<br/>
               <strong>Seats:</strong> {booking.seats.map(seat => `Seat ${seat.id}`).join(', ')}<br/>
-              {booking.bookingType === 'team' && booking.teamMembers && (
+              {booking.bookingType === 'team' && Array.isArray(booking.teamMembers) && booking.teamMembers.length > 0 && (
                 <div>
                   <strong>Team Members:</strong>
                   <ul>

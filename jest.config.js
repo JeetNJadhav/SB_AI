@@ -10,6 +10,7 @@ module.exports = {
   },
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
   transform: {
-    ...tsJestTransformCfg,
+    '^.+\.(ts|tsx)$': 'babel-jest',
+    '^.+\.(js|jsx)$': 'babel-jest',
   },
 };

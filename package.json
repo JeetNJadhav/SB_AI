@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -10,8 +11,10 @@
     "bootstrap": "^5.3.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.3",
     "react-scripts": "5.0.1",
+    "redux": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -33,11 +36,16 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-router-dom": "^5.3.3",
+    "@types/redux-mock-store": "^1.5.0",
+    "babel-jest": "^30.0.2",
     "jest": "^30.0.3",
     "jest-environment-jsdom": "^30.0.2",
     "ts-jest": "^29.4.0",

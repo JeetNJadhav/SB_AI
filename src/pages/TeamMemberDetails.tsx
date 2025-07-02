@@ -44,7 +44,7 @@ const TeamMemberDetails: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Log team member details for now
-    console.log('Team Member Details:', teamMembers);
+    
     navigate('/confirm', { state: { bookingDetails, selectedSeats, teamMembers } });
   };
 

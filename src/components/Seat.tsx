@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface SeatProps {
@@ -23,11 +24,7 @@ const Seat: React.FC<SeatProps> = ({ seat, onSelect }) => {
   return (
     <button
       className={`btn m-1 ${getSeatClass()}`}
-      onClick={() => {
-        // eslint-disable-next-line no-console
-        console.log('Seat clicked:', seat.id, 'selected:', seat.selected, 'booked:', seat.booked);
-        onSelect(seat.id);
-      }}
+      onClick={() => onSelect(seat.id)}
       disabled={seat.booked}
     >
       {seat.id}
