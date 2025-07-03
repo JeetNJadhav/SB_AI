@@ -45,7 +45,7 @@ const TeamMemberDetails: React.FC = () => {
     e.preventDefault();
     // Log team member details for now
     
-    navigate('/confirm', { state: { bookingDetails, selectedSeats, teamMembers } });
+    navigate('/confirm', { state: { bookingDetails, selectedSeats, teamMembers, isUpdate: !!bookingDetails?.id } });
   };
 
   if (!bookingDetails || !selectedSeats || bookingDetails.bookingType !== 'team') {

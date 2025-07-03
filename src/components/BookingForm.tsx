@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { locations } from '../data/locations';
 import { setBookingDetails, BookingDetails } from '../redux/bookingSlice';
+import { BookingDetails as FullBookingDetails } from '../redux/bookingSlice';
 import { RootState } from '../redux/store';
 
-const BookingForm: React.FC = () => {
+const BookingForm: React.FC<{ onFormSubmit: () => void }> = ({ onFormSubmit }) => {
   const dispatch = useDispatch();
-  const bookingDetails = useSelector((state: RootState) => state.booking);
+  const bookingDetails = useSelector((state: RootState) => state.booking.currentBooking);
+  const upcomingBookings = useSelector((state: RootState) => state.booking.upcomingBookings);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -16,7 +18,7 @@ const BookingForm: React.FC = () => {
   };
 
   const handleBookingTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setBookingDetails({ ...bookingDetails, bookingType: e.target.value as 'self' | 'team', numberOfTeamMembers: undefined }));
+    dispatch(setBookingDetails({ bookingType: e.target.value as 'self' | 'team' }));
   };
 
   const handleNumberOfTeamMembersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +27,17 @@ const BookingForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/select-seat');
+
+    const isDuplicateDate = upcomingBookings.some(
+      (booking) => booking.date === bookingDetails.date && booking.id !== bookingDetails.id
+    );
+
+    if (isDuplicateDate) {
+      alert('A booking already exists for this date. Please choose a different date.');
+      return;
+    }
+
+    onFormSubmit();
   };
 
   const selectedLocation = locations.find(loc => loc.venue === bookingDetails.venue);

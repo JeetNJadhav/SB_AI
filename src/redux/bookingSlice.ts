@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BookingDetails {
+  id?: number;
   date: string;
   venue: string;
   building: string;
@@ -22,14 +23,22 @@ export interface Seat {
   selected: boolean;
 }
 
-const initialState: BookingDetails = {
-  date: '',
-  venue: '',
-  building: '',
-  floor: '',
-  bookingType: 'self',
-  teamMembers: [],
-  selectedSeats: [],
+interface BookingState {
+  currentBooking: BookingDetails;
+  upcomingBookings: BookingDetails[];
+}
+
+const initialState: BookingState = {
+  currentBooking: {
+    date: '',
+    venue: '',
+    building: '',
+    floor: '',
+    bookingType: 'self',
+    teamMembers: [],
+    selectedSeats: [],
+  },
+  upcomingBookings: [],
 };
 
 const bookingSlice = createSlice({
@@ -37,32 +46,40 @@ const bookingSlice = createSlice({
   initialState,
   reducers: {
     setBookingDetails: (state, action: PayloadAction<BookingDetails>) => {
-      return { ...state, ...action.payload };
+      state.currentBooking = { ...state.currentBooking, ...action.payload };
     },
     addTeamMember: (state, action: PayloadAction<TeamMember>) => {
-      state.teamMembers?.push(action.payload);
+      state.currentBooking.teamMembers?.push(action.payload);
     },
     removeTeamMember: (state, action: PayloadAction<number>) => {
-      state.teamMembers?.splice(action.payload, 1);
+      state.currentBooking.teamMembers?.splice(action.payload, 1);
     },
     setTeamMembers: (state, action: PayloadAction<TeamMember[]>) => {
-      state.teamMembers = action.payload;
+      state.currentBooking.teamMembers = action.payload;
     },
     setSelectedSeats: (state, action: PayloadAction<Seat[]>) => {
-      state.selectedSeats = action.payload;
+      state.currentBooking.selectedSeats = action.payload;
+    },
+    addBooking: (state, action: PayloadAction<BookingDetails>) => {
+      const newBooking = { ...action.payload, id: state.upcomingBookings.length + 1 };
+      state.upcomingBookings.push(newBooking);
+      state.currentBooking = initialState.currentBooking; // Clear current booking after adding
+    },
+    updateBooking: (state, action: PayloadAction<BookingDetails>) => {
+      const index = state.upcomingBookings.findIndex(booking => booking.id === action.payload.id);
+      if (index !== -1) {
+        state.upcomingBookings[index] = action.payload;
+      }
+      state.currentBooking = initialState.currentBooking; // Clear current booking after updating
     },
     clearBooking: (state) => {
-      state.date = '';
-      state.venue = '';
-      state.building = '';
-      state.floor = '';
-      state.bookingType = 'self';
-      state.numberOfTeamMembers = undefined;
-      state.teamMembers = [];
-      state.selectedSeats = [];
+      state.currentBooking = initialState.currentBooking;
+    },
+    deleteBooking: (state, action: PayloadAction<number>) => {
+      state.upcomingBookings = state.upcomingBookings.filter(booking => booking.id !== action.payload);
     },
   },
 });
 
-export const { setBookingDetails, addTeamMember, removeTeamMember, setTeamMembers, setSelectedSeats, clearBooking } = bookingSlice.actions;
+export const { setBookingDetails, addTeamMember, removeTeamMember, setTeamMembers, setSelectedSeats, addBooking, updateBooking, clearBooking, deleteBooking } = bookingSlice.actions;
 export default bookingSlice.reducer;

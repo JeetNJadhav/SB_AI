@@ -1,7 +1,10 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addBooking, updateBooking, clearBooking } from '../redux/bookingSlice';
 
 interface BookingDetails {
+  id?: number;
   date: string;
   venue: string;
   building: string;
@@ -25,16 +28,28 @@ interface LocationState {
   bookingDetails: BookingDetails;
   selectedSeats: Seat[];
   teamMembers?: TeamMember[];
+  isUpdate?: boolean;
 }
 
 const Confirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bookingDetails, selectedSeats, teamMembers } = (location.state as LocationState) || {};
+  const dispatch = useDispatch();
+  const { bookingDetails, selectedSeats, teamMembers, isUpdate } = (location.state as LocationState) || {};
 
   const handlePayment = () => {
-    // In a real application, you would send booking data to a backend here
-    console.log('Booking Confirmed:', { bookingDetails, selectedSeats, teamMembers });
+    const bookingData = {
+      ...bookingDetails,
+      seats: selectedSeats,
+      teamMembers: teamMembers || [],
+    };
+
+    if (isUpdate) {
+      dispatch(updateBooking(bookingData));
+    } else {
+      dispatch(addBooking(bookingData));
+    }
+    dispatch(clearBooking());
     navigate('/payment');
   };
 
@@ -44,7 +59,7 @@ const Confirmation: React.FC = () => {
 
   return (
     <div className="container mt-4">
-      <h2>Confirm Your Booking</h2>
+      <h2>{isUpdate ? 'Confirm Your Updated Booking' : 'Confirm Your Booking'}</h2>
       <p>Date: {bookingDetails.date}</p>
       <p>Venue: {bookingDetails.venue}</p>
       <p>Building: {bookingDetails.building}</p>
@@ -71,7 +86,7 @@ const Confirmation: React.FC = () => {
           )}
         </div>
       )}
-      <button className="btn btn-primary" onClick={handlePayment}>Pay Now</button>
+      <button className="btn btn-primary" onClick={handlePayment}>{isUpdate ? 'Update Booking' : 'Pay Now'}</button>
     </div>
   );
 };
