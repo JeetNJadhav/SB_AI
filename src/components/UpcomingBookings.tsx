@@ -1,4 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../redux/store';
+import { deleteBooking } from '../redux/bookingSlice';
 
 interface Seat {
   id: number;
@@ -20,13 +24,20 @@ interface Booking {
   teamMembers?: TeamMember[];
 }
 
-const UpcomingBookings: React.FC<{ bookings?: Booking[] }> = ({ bookings: propBookings }) => {
-  const defaultBookings: Booking[] = [
-    { id: 1, date: '2025-07-10', venue: 'Main Office', building: 'A', floor: '3', seats: [{ id: 12 }], bookingType: 'self' },
-    { id: 2, date: '2025-07-15', venue: 'Branch Office', building: 'B', floor: '2', seats: [{ id: 5 }, { id: 6 }], bookingType: 'team', teamMembers: [{ name: 'John Doe', email: 'john@example.com' }, { name: 'Jane Smith', email: 'jane@example.com' }] },
-  ];
+const UpcomingBookings: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const bookings = useSelector((state: RootState) => state.booking.upcomingBookings);
 
-  const bookings = propBookings || defaultBookings;
+  const handleBookingClick = (booking: Booking) => {
+    navigate('/', { state: { bookingToUpdate: booking } });
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this booking?')) {
+      dispatch(deleteBooking(id));
+    }
+  };
 
   return (
     <div>
@@ -49,6 +60,8 @@ const UpcomingBookings: React.FC<{ bookings?: Booking[] }> = ({ bookings: propBo
                   </ul>
                 </div>
               )}
+              <button className="btn btn-sm btn-primary mt-2" onClick={() => handleBookingClick(booking)}>Update</button>
+              <button className="btn btn-sm btn-danger mt-2 ms-2" onClick={() => handleDelete(booking.id)}>Delete</button>
             </li>
           ))}
         </ul>
@@ -57,6 +70,6 @@ const UpcomingBookings: React.FC<{ bookings?: Booking[] }> = ({ bookings: propBo
       )}
     </div>
   );
-};
+};;
 
 export default UpcomingBookings;

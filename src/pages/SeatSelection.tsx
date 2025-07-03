@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import SeatMap from '../components/SeatMap';
 import { locations } from '../data/locations';
 import { RootState } from '../redux/store';
+import { setSelectedSeats } from '../redux/bookingSlice';
 
 interface Seat {
   id: number;
@@ -11,67 +11,73 @@ interface Seat {
   selected: boolean;
 }
 
-const SeatSelection: React.FC = () => {
-  const navigate = useNavigate();
-  const bookingDetails = useSelector((state: RootState) => state.booking);
-
-  const [seats, setSeats] = useState<Seat[]>([]);
-
-  useEffect(() => {
-    // if (bookingDetails) {
-      const selectedVenue = locations.find(loc => loc.venue === bookingDetails.venue);
-      const selectedBuilding = selectedVenue?.buildings.find(bld => bld.name === bookingDetails.building);
-      const selectedFloor = selectedBuilding?.floors.find(flr => flr.number === bookingDetails.floor);
-
-      if (selectedFloor) {
-        setSeats(selectedFloor.seats.map(seat => ({ ...seat, selected: false })));
-      }
-    // }
-  }, [bookingDetails]);
+const SeatSelection: React.FC<{ onBack: () => void; onConfirmSelection: (selectedSeats: Seat[], isUpdate: boolean) => void }> = ({ onBack, onConfirmSelection }) => {
+  const dispatch = useDispatch();
+  const bookingDetails = useSelector((state: RootState) => state.booking.currentBooking);
+  const storedSelectedSeats = useSelector((state: RootState) => {
+    console.log('storedSelectedSeats from Redux (selector):', state.booking.currentBooking.selectedSeats);
+    return state.booking.currentBooking.selectedSeats;
+  });
 
   const handleSelect = (id: number) => {
-    setSeats(prevSeats => {
-      // For test coverage: log when hitting the default branch
-      /* istanbul ignore else */
-      if (bookingDetails.bookingType === 'self') {
-        // Only one seat can be selected at a time
-        return prevSeats.map(seat =>
-          seat.id === id ? { ...seat, selected: !seat.selected } : { ...seat, selected: false }
-        );
-      } else if (bookingDetails.bookingType === 'team') {
-        // For team-booking, allow multiple selections up to numberOfTeamMembers
-        const newSeats = prevSeats.map(seat =>
-          seat.id === id ? { ...seat, selected: !seat.selected } : seat
-        );
-        const currentlySelected = newSeats.filter(seat => seat.selected).length;
-        const targetCount = bookingDetails.numberOfTeamMembers || 0;
-        const isSelecting = newSeats.find(seat => seat.id === id)?.selected;
-        if (isSelecting && currentlySelected > targetCount) {
-          return prevSeats;
-        }
-        return newSeats;
+    console.log('handleSelect called for ID:', id);
+    const currentSelectedSeats = storedSelectedSeats ? [...storedSelectedSeats] : [];
+    const clickedSeatFromLocations = selectedFloor?.seats.find(seat => seat.id === id);
+
+    if (!clickedSeatFromLocations) {
+      console.log('Clicked seat not found in locations data.');
+      return;
+    }
+
+    let newSelectedSeats: Seat[] = [];
+
+    if (bookingDetails.bookingType === 'self') {
+      const isAlreadySelected = currentSelectedSeats.some(seat => seat.id === id);
+      newSelectedSeats = isAlreadySelected ? [] : [{ ...clickedSeatFromLocations, selected: true, booked: clickedSeatFromLocations.booked }];
+      console.log('Self booking - newSelectedSeats:', newSelectedSeats);
+    } else if (bookingDetails.bookingType === 'team') {
+      const targetCount = bookingDetails.numberOfTeamMembers || 0;
+      const isAlreadySelected = currentSelectedSeats.some(seat => seat.id === id);
+
+      if (isAlreadySelected) {
+        newSelectedSeats = currentSelectedSeats.filter(seat => seat.id !== id);
+        console.log('Team booking - deselecting - newSelectedSeats:', newSelectedSeats);
       } else {
-        // For coverage: mark this branch
-        // eslint-disable-next-line no-console
-        console.log('Default branch hit in handleSelect');
-        return prevSeats;
+        if (currentSelectedSeats.length < targetCount) {
+          newSelectedSeats = [...currentSelectedSeats, { ...clickedSeatFromLocations, selected: true, booked: clickedSeatFromLocations.booked }];
+          console.log('Team booking - selecting - newSelectedSeats:', newSelectedSeats);
+        } else {
+          alert(`You can select a maximum of ${targetCount} seats for your team.`);
+          console.log('Team booking - selection limit reached.');
+          return;
+        }
       }
-    });
+    } else {
+      console.log('Default branch hit in handleSelect');
+      return;
+    }
+    dispatch(setSelectedSeats(newSelectedSeats));
+    console.log('Dispatching newSelectedSeats:', newSelectedSeats);
   };
 
   const handleConfirm = () => {
-    const selectedSeats = seats.filter(seat => seat.selected);
+    const isUpdate = !!bookingDetails.id;
+
+    if (!bookingDetails || !bookingDetails.date) {
+      console.log('Booking details missing before confirm.');
+      return;
+    }
 
     if (bookingDetails.bookingType === 'self') {
-      if (selectedSeats.length === 1) {
-        navigate('/confirm', { state: { selectedSeats } });
+      if (storedSelectedSeats && storedSelectedSeats.length === 1) {
+        onConfirmSelection(storedSelectedSeats, isUpdate);
       } else {
         alert('Please select exactly one seat for self-booking.');
       }
     } else if (bookingDetails.bookingType === 'team') {
       const targetCount = bookingDetails.numberOfTeamMembers || 0;
-      if (selectedSeats.length === targetCount) {
-        navigate('/team-members', { state: { selectedSeats } });
+      if (storedSelectedSeats && storedSelectedSeats.length === targetCount) {
+        onConfirmSelection(storedSelectedSeats, isUpdate);
       } else {
         alert(`Please select exactly ${targetCount} seats for team booking.`);
       }
@@ -81,6 +87,18 @@ const SeatSelection: React.FC = () => {
   if (!bookingDetails || !bookingDetails.date) {
     return <div>Please select booking details first.</div>;
   }
+
+  const selectedVenue = locations.find(loc => loc.venue === bookingDetails.venue);
+  const selectedBuilding = selectedVenue?.buildings.find(bld => bld.name === bookingDetails.building);
+  const selectedFloor = selectedBuilding?.floors.find(flr => flr.number === bookingDetails.floor);
+
+  const displaySeats = selectedFloor ? selectedFloor.seats.map(seat => {
+    const isSelected = storedSelectedSeats?.some(s => s.id === seat.id);
+    const isBooked = seat.booked; // Assuming 'booked' status comes from locations data
+    return { ...seat, selected: isSelected || false, booked: isBooked };
+  }) : [];
+
+  console.log('displaySeats before render:', displaySeats);
 
   return (
     <div className="container mt-4">
@@ -92,8 +110,9 @@ const SeatSelection: React.FC = () => {
       {bookingDetails.bookingType === 'team' && (
         <p>Please select {bookingDetails.numberOfTeamMembers} seats for your team.</p>
       )}
-      <SeatMap seats={seats} onSelect={handleSelect} />
+      <SeatMap seats={displaySeats} onSelect={handleSelect} />
       <button className="btn btn-primary mt-3" onClick={handleConfirm}>Confirm Booking</button>
+      <button className="btn btn-secondary mt-3 ms-2" onClick={onBack}>Back to Booking Details</button>
     </div>
   );
 };
