@@ -29,7 +29,7 @@ const Home: React.FC = () => {
         teamMembers: bookingToUpdate.teamMembers,
         selectedSeats: bookingToUpdate.seats.map((seat: { id: number }) => ({ ...seat, booked: false, selected: true }))
       }));
-      setShowSeatSelection(true); // Show seat selection if updating a booking
+      setShowSeatSelection(false); // Don't show seat selection immediately
       window.history.replaceState({}, document.title);
     }
   }, [location.state, dispatch]);
