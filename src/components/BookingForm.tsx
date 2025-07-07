@@ -97,7 +97,7 @@ const BookingForm: React.FC<{ onFormSubmit: () => void }> = ({ onFormSubmit }) =
           ))}
         </select>
       </div>
-      <button type="submit" className="btn btn-primary">Select Seat</button>
+      <button type="submit" className="btn btn-primary">{bookingDetails.id ? 'Update Seat Selection' : 'Select Seat'}</button>
     </form>
   );
 };
