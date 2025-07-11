@@ -14,27 +14,41 @@ const Home: React.FC = () => {
   const currentBooking = useSelector((state: RootState) => state.booking.currentBooking);
 
   const [showSeatSelection, setShowSeatSelection] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<BookingDetails | null>(null);
 
   useEffect(() => {
     if (location.state && location.state.bookingToUpdate) {
       const { bookingToUpdate } = location.state;
       dispatch(setBookingDetails({
-        id: bookingToUpdate.id,
+        id: bookingToUpdate._id, // Use _id from backend
         date: bookingToUpdate.date,
         venue: bookingToUpdate.venue,
         building: bookingToUpdate.building,
         floor: bookingToUpdate.floor,
-        bookingType: bookingToUpdate.bookingType,
-        numberOfTeamMembers: bookingToUpdate.numberOfTeamMembers,
-        teamMembers: bookingToUpdate.teamMembers,
-        selectedSeats: bookingToUpdate.seats.map((seat: { id: number }) => ({ ...seat, booked: false, selected: true }))
+        seatNumber: bookingToUpdate.seatNumber,
+        // Assuming bookingType, numberOfTeamMembers, teamMembers, selectedSeats are part of the bookingToUpdate if needed for update
       }));
+      setEditingBooking(bookingToUpdate); // Set the booking to be edited
       setShowSeatSelection(false); // Don't show seat selection immediately
       window.history.replaceState({}, document.title);
     }
   }, [location.state, dispatch]);
 
   const handleBookingFormSubmit = () => {
+    setShowSeatSelection(true);
+    setEditingBooking(null); // Clear editing state after submission
+  };
+
+  const handleUpdateBooking = (booking: any) => {
+    dispatch(setBookingDetails({
+      id: booking._id,
+      date: booking.date,
+      venue: booking.venue,
+      building: booking.building,
+      floor: booking.floor,
+      seatNumber: booking.seatNumber,
+    }));
+    setEditingBooking(booking);
     setShowSeatSelection(true);
   };
 
@@ -55,14 +69,14 @@ const Home: React.FC = () => {
       <div className="row">
         <div className="col-md-4">
           <h2>Upcoming Bookings</h2>
-          <UpcomingBookings />
+          <UpcomingBookings onUpdate={handleUpdateBooking} />
         </div>
         <div className="col-md-8">
           {showSeatSelection ? (
-            <SeatSelection onBack={handleBackToBookingForm} onConfirmSelection={handleConfirmSelection} />
+            <SeatSelection onBack={handleBackToBookingForm} onConfirmSelection={handleConfirmSelection} editingBooking={editingBooking} />
           ) : (
             <>
-              <h2>Book a Seat</h2>
+              <h2>{editingBooking ? 'Edit Seat Booking' : 'Book a Seat'}</h2>
               <BookingForm onFormSubmit={handleBookingFormSubmit} />
             </>
           )}

@@ -1,11 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BookingDetails {
-  id?: number;
+  id?: string;
   date: string;
   venue: string;
   building: string;
   floor: string;
+  seatNumber?: string;
   bookingType: 'self' | 'team';
   numberOfTeamMembers?: number;
   teamMembers?: TeamMember[];
@@ -61,7 +62,7 @@ const bookingSlice = createSlice({
       state.currentBooking.selectedSeats = action.payload;
     },
     addBooking: (state, action: PayloadAction<BookingDetails>) => {
-      const newBooking = { ...action.payload, id: state.upcomingBookings.length + 1 };
+      const newBooking = { ...action.payload, id: action.payload.id };
       state.upcomingBookings.push(newBooking);
       state.currentBooking = initialState.currentBooking; // Clear current booking after adding
     },
@@ -75,7 +76,7 @@ const bookingSlice = createSlice({
     clearBooking: (state) => {
       state.currentBooking = initialState.currentBooking;
     },
-    deleteBooking: (state, action: PayloadAction<number>) => {
+    deleteBooking: (state, action: PayloadAction<string>) => {
       state.upcomingBookings = state.upcomingBookings.filter(booking => booking.id !== action.payload);
     },
   },

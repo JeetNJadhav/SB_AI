@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import SeatMap from '../components/SeatMap';
 import { locations } from '../data/locations';
 import { RootState } from '../redux/store';
-import { setSelectedSeats } from '../redux/bookingSlice';
+import { setSelectedSeats, BookingDetails } from '../redux/bookingSlice';
 
 interface Seat {
   id: number;
@@ -11,13 +11,27 @@ interface Seat {
   selected: boolean;
 }
 
-const SeatSelection: React.FC<{ onBack: () => void; onConfirmSelection: (selectedSeats: Seat[], isUpdate: boolean) => void }> = ({ onBack, onConfirmSelection }) => {
+const SeatSelection: React.FC<{
+  onBack: () => void;
+  onConfirmSelection: (selectedSeats: Seat[], isUpdate: boolean) => void;
+  editingBooking?: BookingDetails | null;
+}> = ({ onBack, onConfirmSelection, editingBooking }) => {
   const dispatch = useDispatch();
   const bookingDetails = useSelector((state: RootState) => state.booking.currentBooking);
-  const storedSelectedSeats = useSelector((state: RootState) => {
-    console.log('storedSelectedSeats from Redux (selector):', state.booking.currentBooking.selectedSeats);
-    return state.booking.currentBooking.selectedSeats;
-  });
+  const storedSelectedSeats = useSelector((state: RootState) => state.booking.currentBooking.selectedSeats);
+
+  useEffect(() => {
+    if (editingBooking && editingBooking.seatNumber) {
+      const selectedVenue = locations.find(loc => loc.venue === editingBooking.venue);
+      const selectedBuilding = selectedVenue?.buildings.find(bld => bld.name === editingBooking.building);
+      const selectedFloor = selectedBuilding?.floors.find(flr => flr.number === editingBooking.floor);
+      const seatToSelect = selectedFloor?.seats.find(seat => seat.id.toString() === editingBooking.seatNumber);
+
+      if (seatToSelect) {
+        dispatch(setSelectedSeats([{ ...seatToSelect, selected: true }]));
+      }
+    }
+  }, [editingBooking, dispatch]);
 
   const handleSelect = (id: number) => {
     console.log('handleSelect called for ID:', id);

@@ -14,14 +14,16 @@ describe('bookingSlice', () => {
 
   test('should return the initial state', () => {
     expect(store.getState().booking).toEqual({
-      date: '',
-      venue: '',
-      building: '',
-      floor: '',
-      bookingType: 'self',
-      numberOfTeamMembers: undefined,
-      teamMembers: [],
-      selectedSeats: [],
+      currentBooking: {
+        date: '',
+        venue: '',
+        building: '',
+        floor: '',
+        bookingType: 'self',
+        teamMembers: [],
+        selectedSeats: [],
+      },
+      upcomingBookings: [],
     });
   });
 
@@ -34,40 +36,39 @@ describe('bookingSlice', () => {
       bookingType: 'self',
     };
     store.dispatch(setBookingDetails(newDetails));
-    expect(store.getState().booking).toEqual(expect.objectContaining(newDetails));
+    expect(store.getState().booking.currentBooking).toEqual(expect.objectContaining(newDetails));
   });
 
   test('should handle addTeamMember', () => {
     const newMember = { name: 'John Doe', email: 'john@example.com' };
     store.dispatch(addTeamMember(newMember));
-    expect(store.getState().booking.teamMembers).toEqual([newMember]);
+    expect(store.getState().booking.currentBooking.teamMembers).toEqual([newMember]);
   });
 
   test('should handle removeTeamMember', () => {
     const initialMembers = [{ name: 'John Doe', email: 'john@example.com' }, { name: 'Jane Smith', email: 'jane@example.com' }];
     store.dispatch(setTeamMembers(initialMembers));
     store.dispatch(removeTeamMember(0));
-    expect(store.getState().booking.teamMembers).toEqual([{ name: 'Jane Smith', email: 'jane@example.com' }]);
+    expect(store.getState().booking.currentBooking.teamMembers).toEqual([{ name: 'Jane Smith', email: 'jane@example.com' }]);
   });
 
   test('should handle setTeamMembers', () => {
     const members = [{ name: 'Alice', email: 'alice@example.com' }];
     store.dispatch(setTeamMembers(members));
-    expect(store.getState().booking.teamMembers).toEqual(members);
+    expect(store.getState().booking.currentBooking.teamMembers).toEqual(members);
   });
 
   test('should handle clearBooking', () => {
-    store.dispatch(setBookingDetails({ date: '2025-07-01', venue: 'Main Office', building: 'A', floor: '1', bookingType: 'self', numberOfTeamMembers: 2 }));
+    store.dispatch(setBookingDetails({ date: '2025-07-01', venue: 'Main Office', building: 'A', floor: '1', bookingType: 'self' }));
     store.dispatch(setSelectedSeats([{ id: 1, booked: false, selected: true }]));
     store.dispatch(setTeamMembers([{ name: 'Test', email: 'test@test.com' }]));
     store.dispatch(clearBooking());
-    expect(store.getState().booking).toEqual({
+    expect(store.getState().booking.currentBooking).toEqual({
       date: '',
       venue: '',
       building: '',
       floor: '',
       bookingType: 'self',
-      numberOfTeamMembers: undefined,
       teamMembers: [],
       selectedSeats: [],
     });

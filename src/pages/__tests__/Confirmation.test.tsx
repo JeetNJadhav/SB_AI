@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Confirmation from '../Confirmation';
+import { renderWithProviders } from '../../test-utils/renderWithProviders';
 
 const mockedUsedNavigate = jest.fn();
 
@@ -16,7 +17,7 @@ describe('Confirmation', () => {
   });
 
   test('renders invalid booking details message if no booking details or selected seats', () => {
-    render(
+    renderWithProviders(
       <MemoryRouter>
         <Confirmation />
       </MemoryRouter>
@@ -34,7 +35,7 @@ describe('Confirmation', () => {
     };
     const selectedSeats = [{ id: 10, booked: false, selected: true }];
 
-    render(
+    renderWithProviders(
       <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats } }]}>
         <Confirmation />
       </MemoryRouter>
@@ -67,7 +68,7 @@ describe('Confirmation', () => {
       { name: 'Jane Smith', email: 'jane@example.com' },
     ];
 
-    render(
+    renderWithProviders(
       <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats, teamMembers } }]}>
         <Confirmation />
       </MemoryRouter>
@@ -97,7 +98,7 @@ describe('Confirmation', () => {
     };
     const selectedSeats = [{ id: 10, booked: false, selected: true }];
 
-    render(
+    renderWithProviders(
       <MemoryRouter initialEntries={[{ state: { bookingDetails, selectedSeats } }]}>
         <Confirmation />
       </MemoryRouter>
